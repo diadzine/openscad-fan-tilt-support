@@ -1,8 +1,10 @@
 $fn = 50;
-print = 2;
+print = 0;
 thickness = 3;
 fan_width = 92;
 fan_depth = 30;
+fan_hole_distance = 0;
+fan_hole_size = 3;
 
 bracket_width = 30;
 bracket_height = 15;
@@ -14,8 +16,13 @@ screw_head_thickness = 4;
 
 
 module bracket() {
+	// Front vertical support
 	cube([bracket_width, thickness, bracket_height]);
+
+	// Back vertical support
 	translate([0, bracket_depth + thickness, 0]) cube([bracket_width, thickness, bracket_height]);
+	
+	// Horizontal support + screw hole
 	difference () {
 		translate([0, 0, bracket_height]) cube([bracket_width, bracket_depth + 2*thickness, screw_head_thickness + thickness]);	
 		translate([bracket_width/2, bracket_depth/2 + thickness, bracket_height + screw_head_thickness]) cylinder(r=screw_hole_size/2, h=thickness);
@@ -24,6 +31,7 @@ module bracket() {
 }
 
 module tilt_support() {
+	// Computation
 	tilt_height = fan_width/2 + thickness;
 	tilt_half_depth = fan_depth/2 + thickness;
 	hypotenuse = sqrt(pow(tilt_height, 2) + pow(tilt_half_depth, 2));
@@ -31,19 +39,25 @@ module tilt_support() {
 	width = fan_width + 2*screw_head_thickness + 4*thickness + 2*bracket_width;
 	height = ceil(hypotenuse) + 2*thickness + bracket_depth/2;
 
+
+	// Horizontal support + screw holes
 	difference() {
 		cube([width, bracket_depth, thickness]);
 		translate([bracket_width/2, bracket_depth/2, 0]) cylinder(r=screw_hole_size/2, h=thickness);
 		translate([width-bracket_width/2, bracket_depth/2, 0]) cylinder(r=screw_hole_size/2, h=thickness);
 	}
+
+	// Left vertical support + screw hole
 	difference() {
 		translate([bracket_width, 0, thickness]) cube([thickness, bracket_depth, height-thickness]);
 		translate([bracket_width-thickness, bracket_depth/2, height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
 	}
-	//difference() {
+
+	// Right vertical support + screw hole
+	difference() {
 		translate([width - bracket_width, 0, thickness]) cube([thickness, bracket_depth, height-thickness]);
-		//translate([width - bracket_width - thickness, bracket_depth/2, height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=thickness);
-	//}
+		translate([width - bracket_width - thickness, bracket_depth/2, height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
+	}
 }
 
 
