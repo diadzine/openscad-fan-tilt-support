@@ -1,9 +1,9 @@
 $fn = 50;
-print = 0;
+print = 3;
 thickness = 3;
 fan_width = 92;
 fan_depth = 30;
-fan_hole_distance = 0;
+fan_hole_distance = 6;
 fan_hole_size = 3;
 
 bracket_width = 30;
@@ -13,6 +13,19 @@ bracket_depth = 30;
 screw_hole_size = 3;
 screw_head_size = 5;
 screw_head_thickness = 4;
+
+// Computation
+tilt_height = fan_width/2 + thickness;
+tilt_half_depth = fan_depth/2 + thickness;
+hypotenuse = sqrt(pow(tilt_height, 2) + pow(tilt_half_depth, 2));
+
+tilt_support_width = fan_width + 2*screw_head_thickness + 4*thickness;
+tilt_support_height = ceil(hypotenuse) + 2*thickness + bracket_depth/2;
+
+corner_support_height = fan_width/2 + thickness;
+corner_support_depth = fan_depth + 2*thickness;
+corner_support_width = 2*fan_hole_distance + screw_head_thickness + thickness;
+
 
 
 module bracket() {
@@ -31,32 +44,48 @@ module bracket() {
 }
 
 module tilt_support() {
-	// Computation
-	tilt_height = fan_width/2 + thickness;
-	tilt_half_depth = fan_depth/2 + thickness;
-	hypotenuse = sqrt(pow(tilt_height, 2) + pow(tilt_half_depth, 2));
-	
-	width = fan_width + 2*screw_head_thickness + 4*thickness + 2*bracket_width;
-	height = ceil(hypotenuse) + 2*thickness + bracket_depth/2;
-
-
 	// Horizontal support + screw holes
 	difference() {
-		cube([width, bracket_depth, thickness]);
+		cube([tilt_support_width, bracket_depth, thickness]);
 		translate([bracket_width/2, bracket_depth/2, 0]) cylinder(r=screw_hole_size/2, h=thickness);
-		translate([width-bracket_width/2, bracket_depth/2, 0]) cylinder(r=screw_hole_size/2, h=thickness);
+		translate([tilt_support_width-bracket_width/2, bracket_depth/2, 0]) cylinder(r=screw_hole_size/2, h=thickness);
 	}
 
 	// Left vertical support + screw hole
 	difference() {
-		translate([bracket_width, 0, thickness]) cube([thickness, bracket_depth, height-thickness]);
-		translate([bracket_width-thickness, bracket_depth/2, height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
+		translate([0, 0, thickness]) cube([thickness, bracket_depth, tilt_support_height-thickness]);
+		translate([-thickness, bracket_depth/2, tilt_support_height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
 	}
 
 	// Right vertical support + screw hole
 	difference() {
-		translate([width - bracket_width, 0, thickness]) cube([thickness, bracket_depth, height-thickness]);
-		translate([width - bracket_width - thickness, bracket_depth/2, height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
+		translate([tilt_support_width - thickness, 0, thickness]) cube([thickness, bracket_depth, tilt_support_height-thickness]);
+		translate([tilt_support_width - 2*thickness, bracket_depth/2, tilt_support_height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
+	}
+}
+
+module corner_support() {
+	union() {
+		// Side vertical support + screw hole
+		difference() {
+			translate([0, thickness, 0]) cube([thickness, corner_support_depth-2*thickness, corner_support_height]);
+			translate([-thickness, corner_support_depth/2, corner_support_height-bracket_depth/2]) rotate([0, 90, 0]) cylinder(r=screw_hole_size/2, h=3*thickness);
+		}
+
+		// Bottom horizontal support
+		cube([corner_support_width, corner_support_depth, thickness]);
+
+		// Front vertical support + screw hole
+		difference() {
+			translate([0, 0, thickness]) cube([corner_support_width, thickness, corner_support_width-screw_head_thickness]);
+			translate([thickness + screw_head_thickness + fan_hole_distance, -thickness, thickness + fan_hole_distance]) rotate([-90, 0, 0]) cylinder(r=fan_hole_size/2, h=3*thickness);
+		}
+
+		// Back vertical support + screw hole
+		difference() {
+			translate([0, corner_support_depth-thickness, thickness]) cube([corner_support_width, thickness, corner_support_width-screw_head_thickness]);
+			translate([thickness + screw_head_thickness + fan_hole_distance, corner_support_depth-2*thickness, thickness + fan_hole_distance]) rotate([-90, 0, 0]) cylinder(r=fan_hole_size/2, h=3*thickness);
+		}
 	}
 }
 
@@ -66,14 +95,16 @@ if (print == 1) {
 } else if (print == 2) {
 	tilt_support();
 } else if (print == 3) {
+	rotate([0, -90, 0]) corner_support();
 } else {
 	// Brackets
 	bracket();
-	translate([fan_width + 2*screw_head_thickness + 4*thickness + bracket_width, 0, 0]) bracket();
+	translate([tilt_support_width - bracket_width, 0, 0]) bracket();
 
 	// Tilt support
 	translate([0, thickness, bracket_height + screw_head_thickness + thickness]) tilt_support();
 
 	// Fan corners supports
-
+	translate([thickness, bracket_depth/2 + thickness - corner_support_depth/2, bracket_height + screw_head_thickness + thickness + tilt_support_height - corner_support_height]) corner_support();
+	translate([tilt_support_width-thickness, bracket_depth + 2*thickness, bracket_height + screw_head_thickness + thickness + tilt_support_height - corner_support_height]) rotate([0, 0, 180]) corner_support();
 }
